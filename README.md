@@ -3,7 +3,7 @@
 Os membros desse grupo são:
 
 - Vinícius Lourenço (180618)
-- Henrique Rodrigues 
+- Henrique Rodrigues Silva (190898)
 
 ## Como rodar
 
