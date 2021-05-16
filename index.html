@@ -147,7 +147,7 @@
       // GUI
       var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI('UI');
       var instructions = new BABYLON.GUI.TextBlock();
-      instructions.text = 'Mexa-se com as teclas WASD e use o mouse para olhar';
+      instructions.text = 'Mexa-se com as teclas WASD e use o mouse para olhar  ';
       instructions.color = 'white';
       instructions.fontSize = 16;
       instructions.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
@@ -228,12 +228,12 @@
           player = hero;
           console.log(hero);
 
-          //Scale the model down
+          // Scale the model down
           hero.scaling.scaleInPlace(0.08);
-          //Lock camera on the character
+          // Lock camera on the character
           camera1.target = hero;
 
-          //Hero character variables
+          // Hero character variables
           var heroSpeed = 0.05;
           var heroSpeedBackwards = 0.01;
           var heroRotationSpeed = 0.1;
@@ -245,7 +245,7 @@
           const idleAnim = scene.getAnimationGroupByName('Idle');
           const sambaAnim = scene.getAnimationGroupByName('Samba');
 
-          //Rendering loop (executed for everyframe)
+          // Rendering loop (executed for everyframe)
           scene.onBeforeRenderObservable.add(() => {
             for (var barrel of barrels) {
               if (!barrel._isExploding && hero.intersectsMesh(barrel, false, true)) {
@@ -254,7 +254,7 @@
 
                 const particleSystem = new BABYLON.ParticleSystem('particles', 2000);
 
-                //Texture of each particle
+                // Texture of each particle
                 particleSystem.particleTexture = new BABYLON.Texture('https://playground.babylonjs.com/textures/flare.png');
                 // Position where the particles are emiited from
                 particleSystem.emitter = barrel.position;
@@ -268,7 +268,7 @@
                 loose.play();
 
                 var winText = new BABYLON.GUI.TextBlock();
-                winText.text = `Fim de Jogo\n\nVocê morreu e coletou apenas ${currentHeartIndex} de 10 corações!\n\n Aperte f para reiniciar.`;
+                winText.text = `Fim de Jogo\n\nVocê morreu e coletou\n apenas ${currentHeartIndex} de 10 corações!\n\n Aperte f para reiniciar.`;
                 winText.color = 'red';
                 winText.fontSize = 48;
                 winText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
@@ -291,7 +291,7 @@
                   sambaAnim.start(true, 1.0, sambaAnim.from, sambaAnim.to, false);
 
                   var winText = new BABYLON.GUI.TextBlock();
-                  winText.text = 'Você venceu!\n\n E coletou todos os 10 corações!\n\n Aperte f para reiniciar.';
+                  winText.text = 'Você venceu!\n\n E coletou\n todos os 10 corações!\n\n Aperte f para reiniciar.';
                   winText.color = 'white';
                   winText.fontSize = 48;
                   winText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
@@ -301,7 +301,7 @@
 
                 const particleSystem = new BABYLON.ParticleSystem('particles', 2000);
 
-                //Texture of each particle
+                // Texture of each particle
                 particleSystem.particleTexture = new BABYLON.Texture('https://playground.babylonjs.com/textures/flare.png');
                 // Position where the particles are emiited from
                 particleSystem.emitter = heart.position;
@@ -329,7 +329,7 @@
 
             if (!isGameEnded) {
               var keydown = false;
-              //Manage the movements of the character (e.g. position, direction)
+              // Manage the movements of the character (e.g. position, direction)
               if (inputMap['w']) {
                 hero.moveWithCollisions(hero.forward.scaleInPlace(heroSpeed));
                 keydown = true;
@@ -347,27 +347,27 @@
                 keydown = true;
               }
 
-              //Manage animations to be played
+              // Manage animations to be played
               if (keydown) {
                 if (!animating) {
                   animating = true;
                   if (inputMap['s']) {
-                    //Walk backwards
+                    // Walk backwards
                     walkBackAnim.start(true, 1.0, walkBackAnim.from, walkBackAnim.to, false);
                   } else {
-                    //Walk
+                    // Walk
                     walkAnim.start(true, 1.0, walkAnim.from, walkAnim.to, false);
                   }
                 }
               } else if (animating) {
-                //Default animation is idle when no key is down
+                // Default animation is idle when no key is down
                 idleAnim.start(true, 1.0, idleAnim.from, idleAnim.to, false);
 
-                //Stop all animations besides Idle Anim when no key is down
+                // Stop all animations besides Idle Anim when no key is down
                 walkAnim.stop();
                 walkBackAnim.stop();
 
-                //Ensure animation are played only once per rendering loop
+                // Ensure animation are played only once per rendering loop
                 animating = false;
               }
             } else {
