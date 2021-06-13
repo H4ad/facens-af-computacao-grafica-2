@@ -133,17 +133,17 @@
         marble.setParent(null)
         marble.visibility = 0
 
-        marbleMaterialArray.push(scene.getMaterialByName('blueMat'), scene.getMaterialByName('greenMat'), scene.getMaterialByName('redMat'), scene.getMaterialByName('purpleMat'), scene.getMaterialByName('yellowMat'))
+        marbleMaterialArray.push(scene.getMaterialByName('blueMat'), scene.getMaterialByName('greenMat'), scene.getMaterialByName('redMat'), scene.getMaterialByName('purpleMat'), scene.getMaterialByName('yellowMat'));
 
         var mesh = meshes[0]
 
-        mesh.wireframe = true
-        mesh.scaling.scaleInPlace(1)
-        mesh.position = new BABYLON.Vector3(0, 0, 0)
-        mesh.ellipsoid = new BABYLON.Vector3(2.2, 1.5, 2.2)
-        mesh.ellipsoidOffset = new BABYLON.Vector3(0, 0.1, 0)
+        mesh.wireframe = true;
+        mesh.scaling.scaleInPlace(1);
+        mesh.position = new BABYLON.Vector3(0, 0, 0);
+        mesh.ellipsoid = new BABYLON.Vector3(2.2, 1.5, 2.2);
+        mesh.ellipsoidOffset = new BABYLON.Vector3(0, 0.1, 0);
 
-        mesh.name = 'scene_02.glb'
+        mesh.name = 'scene_02.glb';
 
         //get each mesh that's been loaded
         var bridge1 = scene.getMeshByName('bridge_01')
