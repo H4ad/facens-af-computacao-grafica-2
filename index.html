@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <!-- Vinícius Lourenço (180618) -->
+  <!-- Henrique Rodrigues Silva (190898) -->
   <title>Babylon.js sample code</title>
 
   <!-- Babylon.js -->
@@ -39,367 +41,369 @@
 </head>
 
 <body>
-<canvas id="renderCanvas"></canvas>
-<script>
-  var canvas = document.getElementById('renderCanvas')
+  <canvas id="renderCanvas"></canvas>
+  <script>
+    var canvas = document.getElementById('renderCanvas')
 
-  var barrels = []
-  var hearts = []
-  var currentHeartIndex = 0
-  var player = null
-  var engine = null
-  var scene = null
-  var sceneToRender = null
-  var isGameEnded = false
-  var createDefaultEngine = function () {
-    return new BABYLON.Engine(canvas, true, { reserveDrawingBuffer: true, stencil: true, disableWebGL2Support: false })
-  }
+    var barrels = []
+    var hearts = []
+    var currentHeartIndex = 0
+    var player = null
+    var engine = null
+    var scene = null
+    var sceneToRender = null
+    var isGameEnded = false
+    var createDefaultEngine = function () {
+      return new BABYLON.Engine(canvas, true, { reserveDrawingBuffer: true, stencil: true, disableWebGL2Support: false })
+    }
 
-  var createScene = function () {
-    // Low Poly Character with Blender Tutorial of Grant Abbitt: https://www.youtube.com/user/mediagabbitt
-    // Character animations by Mixamo: https://www.mixamo.com/
+    var createScene = function () {
+      // Low Poly Character with Blender Tutorial of Grant Abbitt: https://www.youtube.com/user/mediagabbitt
+      // Character animations by Mixamo: https://www.mixamo.com/
 
-    engine.enableOfflineSupport = false
+      engine.enableOfflineSupport = false
 
-    // This creates a basic Babylon Scene object (non-mesh)
-    var scene = new BABYLON.Scene(engine)
-    scene.debugLayer.show()
+      // This creates a basic Babylon Scene object (non-mesh)
+      var scene = new BABYLON.Scene(engine)
+      scene.debugLayer.show()
 
-    // Environment
-    var hdrTexture = BABYLON.CubeTexture.CreateFromPrefilteredData('https://playground.babylonjs.com/textures/environment.dds', scene)
-    hdrTexture.name = 'envTex'
-    hdrTexture.gammaSpace = false
-    scene.environmentTexture = hdrTexture
+      // Environment
+      var hdrTexture = BABYLON.CubeTexture.CreateFromPrefilteredData('https://playground.babylonjs.com/textures/environment.dds', scene)
+      hdrTexture.name = 'envTex'
+      hdrTexture.gammaSpace = false
+      scene.environmentTexture = hdrTexture
 
-    var skybox = BABYLON.MeshBuilder.CreateBox('skyBox', { size: 1000.0 }, scene)
-    var skyboxMaterial = new BABYLON.StandardMaterial('skyBox', scene)
-    skyboxMaterial.backFaceCulling = false
-    skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture('https://playground.babylonjs.com/textures/skybox', scene)
-    skyboxMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE
-    skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0)
-    skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0)
-    skybox.material = skyboxMaterial
+      var skybox = BABYLON.MeshBuilder.CreateBox('skyBox', { size: 1000.0 }, scene)
+      var skyboxMaterial = new BABYLON.StandardMaterial('skyBox', scene)
+      skyboxMaterial.backFaceCulling = false
+      skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture('https://playground.babylonjs.com/textures/skybox', scene)
+      skyboxMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE
+      skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0)
+      skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0)
+      skybox.material = skyboxMaterial
 
-    //setup camera
-    var camera = new BABYLON.ArcRotateCamera(
-      'Camera',
-      BABYLON.Tools.ToRadians(-120),
-      BABYLON.Tools.ToRadians(80),
-      80,
-      new BABYLON.Vector3(0, 15, 0),
-      scene
-    )
-    camera.attachControl(canvas, false)
-
-    //enable Physics in the scene
-    scene.enablePhysics(new BABYLON.Vector3(0, -12, 0), new BABYLON.AmmoJSPlugin())
-
-    //setup lights
-    var light1 = new BABYLON.PointLight('light1', new BABYLON.Vector3(0, 5, -6), scene)
-    var light2 = new BABYLON.PointLight('light2', new BABYLON.Vector3(6, 5, 3.5), scene)
-    var light3 = new BABYLON.DirectionalLight('light3', new BABYLON.Vector3(20, -5, 20), scene)
-    light1.intensity = 15
-    light2.intensity = 5
-
-    var metal1 = new BABYLON.Sound('Music', 'assets/metal_01.mp3', scene)
-    var metal2 = new BABYLON.Sound('Music', 'assets/metal_02.mp3', scene)
-    var metal3 = new BABYLON.Sound('Music', 'assets/metal_03.mp3', scene)
-    var metalSounds = [metal1, metal2, metal3]
-    var playMetalSound = () =>  metalSounds[Math.floor(Math.random() * metalSounds.length)].play();
-
-    engine.displayLoadingUI()
-
-    //create an array of different starting positions for the marbles
-    var marbleStartPosArray = [
-      new BABYLON.Vector3(4, 45, 18),
-      new BABYLON.Vector3(-11, 45, 5),
-      new BABYLON.Vector3(1, 45, 11),
-      new BABYLON.Vector3(-11, 45, 17),
-    ]
-    var marbleMaterialArray = []
-
-    //create a box used to trigger the destrucion of marbles
-    var killBox = BABYLON.MeshBuilder.CreateBox('killBox', { width: 100, depth: 100, height: 0.5 }, scene)
-    killBox.position = new BABYLON.Vector3(0, -50, 0)
-    killBox.visibility = 0
-
-    Promise.all([
-      BABYLON.SceneLoader.AppendAsync('https://models.babylonjs.com/Marble/marble/marble.gltf'),
-      BABYLON.SceneLoader.ImportMeshAsync('', '/assets/', 'scene_02.glb', scene),
-    ]).then(([marble, { meshes }]) => {
-      var marble = scene.getMeshByName('marble')
-      marble.setParent(null)
-      marble.visibility = 0
-
-      marbleMaterialArray.push(scene.getMaterialByName('blueMat'), scene.getMaterialByName('greenMat'), scene.getMaterialByName('redMat'), scene.getMaterialByName('purpleMat'), scene.getMaterialByName('yellowMat'))
-
-      var mesh = meshes[0]
-
-      mesh.wireframe = true
-      mesh.scaling.scaleInPlace(1)
-      mesh.position = new BABYLON.Vector3(0, 0, 0)
-      mesh.ellipsoid = new BABYLON.Vector3(2.2, 1.5, 2.2)
-      mesh.ellipsoidOffset = new BABYLON.Vector3(0, 0.1, 0)
-
-      mesh.name = 'scene_02.glb'
-
-      //get each mesh that's been loaded
-      var bridge1 = scene.getMeshByName('bridge_01')
-      var bridge2 = scene.getMeshByName('bridge_02')
-      var bridge3 = scene.getMeshByName('bridge_03')
-      var bridge4 = scene.getMeshByName('bridge_04')
-      var bridge5 = scene.getMeshByName('bridge_05')
-      var bridge6 = scene.getMeshByName('bridge_06')
-      var bridge7 = scene.getMeshByName('bridge_07')
-      var bridge8 = scene.getMeshByName('bridge_08')
-      var bridge9 = scene.getMeshByName('bridge_09')
-      var bridge10 = scene.getMeshByName('bridge_10')
-      var bridge11 = scene.getMeshByName('bridge_11')
-      var bridge12 = scene.getMeshByName('bridge_12')
-      var bridge13 = scene.getMeshByName('bridge_13')
-      var bridge14 = scene.getMeshByName('bridge_14')
-      var bridge15 = scene.getMeshByName('bridge_15')
-      var bridge16 = scene.getMeshByName('bridge_16')
-      var bridge17 = scene.getMeshByName('bridge_17')
-      var bridge18 = scene.getMeshByName('bridge_18')
-      var bridge19 = scene.getMeshByName('bridge_19')
-      var bridge20 = scene.getMeshByName('bridge_20')
-      var bridge21 = scene.getMeshByName('bridge_21')
-      var bridge22 = scene.getMeshByName('bridge_22')
-      var bridge23 = scene.getMeshByName('bridge_23')
-      var plate01 = scene.getMeshByName('plate_01')
-      var plate02 = scene.getMeshByName('plate_02')
-      var plate03 = scene.getMeshByName('plate_03')
-      var knife = scene.getMeshByName('knife')
-      var dishtray1 = scene.getMeshByName('dishtray_01')
-      var dishtray2 = scene.getMeshByName('dishtray_02')
-
-      //set the parents of each mesh to null
-      bridge1.setParent(null)
-      bridge2.setParent(null)
-      bridge3.setParent(null)
-      bridge4.setParent(null)
-      bridge5.setParent(null)
-      bridge6.setParent(null)
-      bridge7.setParent(null)
-      bridge8.setParent(null)
-      bridge9.setParent(null)
-      bridge10.setParent(null)
-      bridge11.setParent(null)
-      bridge12.setParent(null)
-      bridge13.setParent(null)
-      bridge14.setParent(null)
-      bridge15.setParent(null)
-      bridge16.setParent(null)
-      bridge17.setParent(null)
-      bridge18.setParent(null)
-      bridge19.setParent(null)
-      bridge20.setParent(null)
-      bridge21.setParent(null)
-      bridge22.setParent(null)
-      bridge23.setParent(null)
-      plate01.setParent(null)
-      plate02.setParent(null)
-      plate03.setParent(null)
-      knife.setParent(null)
-      dishtray1.setParent(null)
-      dishtray2.setParent(null)
-
-      var plates = [plate01, plate02, plate03]
-
-      //add physics imposters to anything marbles will collide with
-      bridge1.physicsImpostor = new BABYLON.PhysicsImpostor(bridge1, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
-      bridge2.physicsImpostor = new BABYLON.PhysicsImpostor(bridge2, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
-      bridge3.physicsImpostor = new BABYLON.PhysicsImpostor(bridge3, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
-      bridge4.physicsImpostor = new BABYLON.PhysicsImpostor(bridge4, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
-      bridge5.physicsImpostor = new BABYLON.PhysicsImpostor(bridge5, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
-      bridge6.physicsImpostor = new BABYLON.PhysicsImpostor(bridge6, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
-      bridge7.physicsImpostor = new BABYLON.PhysicsImpostor(bridge7, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
-      bridge8.physicsImpostor = new BABYLON.PhysicsImpostor(bridge8, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
-      bridge9.physicsImpostor = new BABYLON.PhysicsImpostor(bridge9, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
-      bridge10.physicsImpostor = new BABYLON.PhysicsImpostor(bridge10, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
-      bridge11.physicsImpostor = new BABYLON.PhysicsImpostor(bridge11, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
-      bridge12.physicsImpostor = new BABYLON.PhysicsImpostor(bridge12, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
-      bridge13.physicsImpostor = new BABYLON.PhysicsImpostor(bridge13, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
-      bridge14.physicsImpostor = new BABYLON.PhysicsImpostor(bridge14, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
-      bridge15.physicsImpostor = new BABYLON.PhysicsImpostor(bridge15, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
-      bridge16.physicsImpostor = new BABYLON.PhysicsImpostor(bridge16, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
-      bridge17.physicsImpostor = new BABYLON.PhysicsImpostor(bridge17, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
-      bridge18.physicsImpostor = new BABYLON.PhysicsImpostor(bridge18, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
-      bridge19.physicsImpostor = new BABYLON.PhysicsImpostor(bridge19, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
-      bridge20.physicsImpostor = new BABYLON.PhysicsImpostor(bridge20, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
-      bridge21.physicsImpostor = new BABYLON.PhysicsImpostor(bridge21, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
-      bridge22.physicsImpostor = new BABYLON.PhysicsImpostor(bridge22, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
-      bridge23.physicsImpostor = new BABYLON.PhysicsImpostor(bridge23, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
-
-      plate01.physicsImpostor = new BABYLON.PhysicsImpostor(plate01, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
-      plate02.physicsImpostor = new BABYLON.PhysicsImpostor(plate02, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
-      plate03.physicsImpostor = new BABYLON.PhysicsImpostor(plate03, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
-      knife.physicsImpostor = new BABYLON.PhysicsImpostor(knife, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
-      dishtray1.physicsImpostor = new BABYLON.PhysicsImpostor(dishtray1, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
-      dishtray2.physicsImpostor = new BABYLON.PhysicsImpostor(dishtray2, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
-
-      knife.position = new BABYLON.Vector3(0, 0, 0)
-      knife.rotation = new BABYLON.Vector3(0, 0, 0)
-
-      var spinnerPivotParent = new BABYLON.TransformNode('spinnerPivotParent')
-
-      spinnerPivotParent.scaling.y = 0.5
-      spinnerPivotParent.scaling.x = 0.5
-      spinnerPivotParent.scaling.z = 0.5
-
-      knife.setParent(spinnerPivotParent)
-
-      //handle logic for the brass wind-up spinner
-      var currentWindUpAngle
-      var marbleSpawnRate = 8
-      var nextMarbleSpawnAngle = 360 / marbleSpawnRate
-      var spinnerRotateSpeed = 60
-      var marblePosition = 0
-
-      BABYLON.Animation.CreateAndStartAnimation('spinnerRotation', spinnerPivotParent, 'rotation.z', 30, spinnerRotateSpeed, BABYLON.Tools.ToRadians(0), BABYLON.Tools.ToRadians(-360), 1)
-
-      //logic to change the starting marble position based on the rotation of the brass wind-up spinner
-      scene.actionManager = new BABYLON.ActionManager(scene)
-      scene.actionManager.registerAction(
-        new BABYLON.ExecuteCodeAction({
-            trigger: BABYLON.ActionManager.OnEveryFrameTrigger
-          },
-          function () {
-            currentWindUpAngle = Math.abs(BABYLON.Tools.ToDegrees(spinnerPivotParent.rotation.z))
-
-            if (nextMarbleSpawnAngle == 360 && currentWindUpAngle < (360 / marbleSpawnRate)) {
-              nextMarbleSpawnAngle = (360 / marbleSpawnRate)
-            } else if (currentWindUpAngle >= nextMarbleSpawnAngle) {
-              nextMarbleSpawnAngle += (360 / marbleSpawnRate)
-              createMarble(marblePosition, plates)
-              marblePosition += 1
-
-              if (marblePosition == 4) {
-                marblePosition = 0
-              }
-            }
-          }
-        )
-      )
-
-      engine.hideLoadingUI()
-    })
-
-    //This is a function to create marbles: creating a mesh, adding a physics imposter, and adding an event trigger
-    function createMarble(spawnAngle, plates) {
-      //create a marble (sphere) using meshbuilder
-      var marble = scene.getMeshByName('marble').clone('marbleClone')
-      marble.visibility = 1
-      marble.material = marbleMaterialArray[Math.floor(Math.random() * 5)]
-
-      //position the marble based on the incoming angle of the windup part of the marbleTower
-      marble.position = marbleStartPosArray[spawnAngle % marbleStartPosArray.length]
-
-      //add physics to the marble
-      marble.physicsImpostor = new BABYLON.PhysicsImpostor(
-        marble,
-        BABYLON.PhysicsImpostor.SphereImpostor,
-        { mass: 2, friction: 0.5, restitution: 0 },
+      //setup camera
+      var camera = new BABYLON.ArcRotateCamera(
+        'Camera',
+        BABYLON.Tools.ToRadians(-120),
+        BABYLON.Tools.ToRadians(80),
+        80,
+        new BABYLON.Vector3(0, 15, 0),
         scene
       )
+      camera.attachControl(canvas, false)
 
-      //add an actionManager to the marble
-      marble.actionManager = new BABYLON.ActionManager(scene)
+      //enable Physics in the scene
+      scene.enablePhysics(new BABYLON.Vector3(0, -12, 0), new BABYLON.AmmoJSPlugin())
 
-      //register a new action with the marble's actionManager..this will execute code whenever the marble intersects the "killBox"
-      marble.actionManager.registerAction(
-        new BABYLON.ExecuteCodeAction(
-          {
-            trigger: BABYLON.ActionManager.OnIntersectionEnterTrigger,
-            parameter: killBox,
+      //setup lights
+      var light1 = new BABYLON.PointLight('light1', new BABYLON.Vector3(0, 5, -6), scene)
+      var light2 = new BABYLON.PointLight('light2', new BABYLON.Vector3(6, 5, 3.5), scene)
+      var light3 = new BABYLON.DirectionalLight('light3', new BABYLON.Vector3(20, -5, 20), scene)
+      light1.intensity = 15
+      light2.intensity = 5
+
+      var metal1 = new BABYLON.Sound('Music', 'assets/metal_01.mp3', scene)
+      var metal2 = new BABYLON.Sound('Music', 'assets/metal_02.mp3', scene)
+      var metal3 = new BABYLON.Sound('Music', 'assets/metal_03.mp3', scene)
+      var metalSounds = [metal1, metal2, metal3]
+      var playMetalSound = () => metalSounds[Math.floor(Math.random() * metalSounds.length)].play();
+
+      engine.displayLoadingUI()
+
+      //create an array of different starting positions for the marbles
+      var marbleStartPosArray = [
+        new BABYLON.Vector3(4, 45, 18),
+        new BABYLON.Vector3(-11, 45, 5),
+        new BABYLON.Vector3(1, 45, 11),
+        new BABYLON.Vector3(-11, 45, 17),
+      ]
+      var marbleMaterialArray = []
+
+      //create a box used to trigger the destrucion of marbles
+      var killBox = BABYLON.MeshBuilder.CreateBox('killBox', { width: 100, depth: 100, height: 0.5 }, scene)
+      killBox.position = new BABYLON.Vector3(0, -50, 0)
+      killBox.visibility = 0
+
+      Promise.all([
+        BABYLON.SceneLoader.AppendAsync('https://models.babylonjs.com/Marble/marble/marble.gltf'),
+        BABYLON.SceneLoader.ImportMeshAsync('', '/assets/', 'scene_02.glb', scene),
+      ]).then(([marble, { meshes }]) => {
+        var marble = scene.getMeshByName('marble')
+        marble.setParent(null)
+        marble.visibility = 0
+
+        marbleMaterialArray.push(scene.getMaterialByName('blueMat'), scene.getMaterialByName('greenMat'), scene.getMaterialByName('redMat'), scene.getMaterialByName('purpleMat'), scene.getMaterialByName('yellowMat'))
+
+        var mesh = meshes[0]
+
+        mesh.wireframe = true
+        mesh.scaling.scaleInPlace(1)
+        mesh.position = new BABYLON.Vector3(0, 0, 0)
+        mesh.ellipsoid = new BABYLON.Vector3(2.2, 1.5, 2.2)
+        mesh.ellipsoidOffset = new BABYLON.Vector3(0, 0.1, 0)
+
+        mesh.name = 'scene_02.glb'
+
+        //get each mesh that's been loaded
+        var bridge1 = scene.getMeshByName('bridge_01')
+        var bridge2 = scene.getMeshByName('bridge_02')
+        var bridge3 = scene.getMeshByName('bridge_03')
+        var bridge4 = scene.getMeshByName('bridge_04')
+        var bridge5 = scene.getMeshByName('bridge_05')
+        var bridge6 = scene.getMeshByName('bridge_06')
+        var bridge7 = scene.getMeshByName('bridge_07')
+        var bridge8 = scene.getMeshByName('bridge_08')
+        var bridge9 = scene.getMeshByName('bridge_09')
+        var bridge10 = scene.getMeshByName('bridge_10')
+        var bridge11 = scene.getMeshByName('bridge_11')
+        var bridge12 = scene.getMeshByName('bridge_12')
+        var bridge13 = scene.getMeshByName('bridge_13')
+        var bridge14 = scene.getMeshByName('bridge_14')
+        var bridge15 = scene.getMeshByName('bridge_15')
+        var bridge16 = scene.getMeshByName('bridge_16')
+        var bridge17 = scene.getMeshByName('bridge_17')
+        var bridge18 = scene.getMeshByName('bridge_18')
+        var bridge19 = scene.getMeshByName('bridge_19')
+        var bridge20 = scene.getMeshByName('bridge_20')
+        var bridge21 = scene.getMeshByName('bridge_21')
+        var bridge22 = scene.getMeshByName('bridge_22')
+        var bridge23 = scene.getMeshByName('bridge_23')
+        var plate01 = scene.getMeshByName('plate_01')
+        var plate02 = scene.getMeshByName('plate_02')
+        var plate03 = scene.getMeshByName('plate_03')
+        var knife = scene.getMeshByName('knife')
+        var dishtray1 = scene.getMeshByName('dishtray_01')
+        var dishtray2 = scene.getMeshByName('dishtray_02')
+
+        //set the parents of each mesh to null
+        bridge1.setParent(null)
+        bridge2.setParent(null)
+        bridge3.setParent(null)
+        bridge4.setParent(null)
+        bridge5.setParent(null)
+        bridge6.setParent(null)
+        bridge7.setParent(null)
+        bridge8.setParent(null)
+        bridge9.setParent(null)
+        bridge10.setParent(null)
+        bridge11.setParent(null)
+        bridge12.setParent(null)
+        bridge13.setParent(null)
+        bridge14.setParent(null)
+        bridge15.setParent(null)
+        bridge16.setParent(null)
+        bridge17.setParent(null)
+        bridge18.setParent(null)
+        bridge19.setParent(null)
+        bridge20.setParent(null)
+        bridge21.setParent(null)
+        bridge22.setParent(null)
+        bridge23.setParent(null)
+        plate01.setParent(null)
+        plate02.setParent(null)
+        plate03.setParent(null)
+        knife.setParent(null)
+        dishtray1.setParent(null)
+        dishtray2.setParent(null)
+
+        var plates = [plate01, plate02, plate03]
+
+        //add physics imposters to anything marbles will collide with
+        bridge1.physicsImpostor = new BABYLON.PhysicsImpostor(bridge1, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
+        bridge2.physicsImpostor = new BABYLON.PhysicsImpostor(bridge2, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
+        bridge3.physicsImpostor = new BABYLON.PhysicsImpostor(bridge3, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
+        bridge4.physicsImpostor = new BABYLON.PhysicsImpostor(bridge4, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
+        bridge5.physicsImpostor = new BABYLON.PhysicsImpostor(bridge5, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
+        bridge6.physicsImpostor = new BABYLON.PhysicsImpostor(bridge6, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
+        bridge7.physicsImpostor = new BABYLON.PhysicsImpostor(bridge7, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
+        bridge8.physicsImpostor = new BABYLON.PhysicsImpostor(bridge8, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
+        bridge9.physicsImpostor = new BABYLON.PhysicsImpostor(bridge9, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
+        bridge10.physicsImpostor = new BABYLON.PhysicsImpostor(bridge10, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
+        bridge11.physicsImpostor = new BABYLON.PhysicsImpostor(bridge11, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
+        bridge12.physicsImpostor = new BABYLON.PhysicsImpostor(bridge12, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
+        bridge13.physicsImpostor = new BABYLON.PhysicsImpostor(bridge13, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
+        bridge14.physicsImpostor = new BABYLON.PhysicsImpostor(bridge14, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
+        bridge15.physicsImpostor = new BABYLON.PhysicsImpostor(bridge15, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
+        bridge16.physicsImpostor = new BABYLON.PhysicsImpostor(bridge16, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
+        bridge17.physicsImpostor = new BABYLON.PhysicsImpostor(bridge17, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
+        bridge18.physicsImpostor = new BABYLON.PhysicsImpostor(bridge18, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
+        bridge19.physicsImpostor = new BABYLON.PhysicsImpostor(bridge19, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
+        bridge20.physicsImpostor = new BABYLON.PhysicsImpostor(bridge20, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
+        bridge21.physicsImpostor = new BABYLON.PhysicsImpostor(bridge21, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
+        bridge22.physicsImpostor = new BABYLON.PhysicsImpostor(bridge22, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
+        bridge23.physicsImpostor = new BABYLON.PhysicsImpostor(bridge23, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
+
+        plate01.physicsImpostor = new BABYLON.PhysicsImpostor(plate01, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
+        plate02.physicsImpostor = new BABYLON.PhysicsImpostor(plate02, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
+        plate03.physicsImpostor = new BABYLON.PhysicsImpostor(plate03, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
+        knife.physicsImpostor = new BABYLON.PhysicsImpostor(knife, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 10 }, scene);
+        dishtray1.physicsImpostor = new BABYLON.PhysicsImpostor(dishtray1, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
+        dishtray2.physicsImpostor = new BABYLON.PhysicsImpostor(dishtray2, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
+
+        knife.position = new BABYLON.Vector3(0, 0, 0);
+        knife.rotation = new BABYLON.Vector3(0, 0, 0);
+        knife.checkCollisions = true;
+
+        var spinnerPivotParent = new BABYLON.Mesh();
+
+        spinnerPivotParent.scaling.y = 0.5;
+        spinnerPivotParent.scaling.x = 0.5;
+        spinnerPivotParent.scaling.z = 0.5;
+
+        knife.setParent(spinnerPivotParent);
+
+        //handle logic for the brass wind-up spinner
+        var currentWindUpAngle;
+        var marbleSpawnRate = 8;
+        var nextMarbleSpawnAngle = 360 / marbleSpawnRate;
+        var spinnerRotateSpeed = 60;
+        var marblePosition = 0;
+
+        BABYLON.Animation.CreateAndStartAnimation('spinnerRotation', spinnerPivotParent, 'rotation.z', 30, spinnerRotateSpeed, BABYLON.Tools.ToRadians(0), BABYLON.Tools.ToRadians(-360), 1)
+
+        //logic to change the starting marble position based on the rotation of the brass wind-up spinner
+        scene.actionManager = new BABYLON.ActionManager(scene)
+        scene.actionManager.registerAction(
+          new BABYLON.ExecuteCodeAction({
+            trigger: BABYLON.ActionManager.OnEveryFrameTrigger
           },
-          function () {
-            fadeAndDestroyMarble(marble)
-          }
-        )
-      )
+            function () {
+              currentWindUpAngle = Math.abs(BABYLON.Tools.ToDegrees(spinnerPivotParent.rotation.z))
 
-      for (const plate of plates) {
+              if (nextMarbleSpawnAngle == 360 && currentWindUpAngle < (360 / marbleSpawnRate)) {
+                nextMarbleSpawnAngle = (360 / marbleSpawnRate)
+              } else if (currentWindUpAngle >= nextMarbleSpawnAngle) {
+                nextMarbleSpawnAngle += (360 / marbleSpawnRate)
+                createMarble(marblePosition, plates)
+                marblePosition += 1
+
+                if (marblePosition == 4) {
+                  marblePosition = 0
+                }
+              }
+            }
+          )
+        )
+
+        engine.hideLoadingUI()
+      })
+
+      //This is a function to create marbles: creating a mesh, adding a physics imposter, and adding an event trigger
+      function createMarble(spawnAngle, plates) {
+        //create a marble (sphere) using meshbuilder
+        var marble = scene.getMeshByName('marble').clone('marbleClone')
+        marble.visibility = 1
+        marble.material = marbleMaterialArray[Math.floor(Math.random() * 5)]
+
+        //position the marble based on the incoming angle of the windup part of the marbleTower
+        marble.position = marbleStartPosArray[spawnAngle % marbleStartPosArray.length]
+
+        //add physics to the marble
+        marble.physicsImpostor = new BABYLON.PhysicsImpostor(
+          marble,
+          BABYLON.PhysicsImpostor.SphereImpostor,
+          { mass: 2, friction: 0.5, restitution: 0 },
+          scene
+        )
+
+        //add an actionManager to the marble
+        marble.actionManager = new BABYLON.ActionManager(scene)
+
         //register a new action with the marble's actionManager..this will execute code whenever the marble intersects the "killBox"
         marble.actionManager.registerAction(
           new BABYLON.ExecuteCodeAction(
             {
               trigger: BABYLON.ActionManager.OnIntersectionEnterTrigger,
-              parameter: plate,
+              parameter: killBox,
             },
             function () {
-              fadeAndDestroyMarble(marble, true)
+              fadeAndDestroyMarble(marble)
             }
           )
         )
+
+        for (const plate of plates) {
+          //register a new action with the marble's actionManager..this will execute code whenever the marble intersects the "killBox"
+          marble.actionManager.registerAction(
+            new BABYLON.ExecuteCodeAction(
+              {
+                trigger: BABYLON.ActionManager.OnIntersectionEnterTrigger,
+                parameter: plate,
+              },
+              function () {
+                fadeAndDestroyMarble(marble, true)
+              }
+            )
+          )
+        }
       }
+
+      function fadeAndDestroyMarble(marble, playSound) {
+        if (marble._destroyed)
+          return;
+
+        marble._destroyed = true;
+
+        //the one line of code version
+        BABYLON.Animation.CreateAndStartAnimation('marbleVisAnim', marble, 'visibility', 30, 30, 1, 0, 0, null, () => {
+          marble.dispose()
+        })
+
+        if (playSound)
+          playMetalSound();
+
+        const particleSystem = new BABYLON.ParticleSystem('particles', 2000);
+
+        //Texture of each particle
+        particleSystem.particleTexture = new BABYLON.Texture('https://playground.babylonjs.com/textures/flare.png');
+        // Position where the particles are emited from
+        particleSystem.emitter = marble.position;
+        particleSystem.disposeOnStop = true;
+
+        particleSystem.start();
+
+        setTimeout(() => {
+          particleSystem.stop();
+        }, 500);
+      }
+
+      return scene
     }
 
-    function fadeAndDestroyMarble(marble, playSound) {
-      if (marble._destroyed)
-        return;
+    window.initFunction = async function () {
+      var asyncEngineCreation = async function () {
+        try {
+          await Ammo().then(console.log)
 
-      marble._destroyed = true;
+          return createDefaultEngine()
+        } catch (e) {
+          console.log('the available createEngine function failed. Creating the default engine instead')
+          return createDefaultEngine()
+        }
+      }
 
-      //the one line of code version
-      BABYLON.Animation.CreateAndStartAnimation('marbleVisAnim', marble, 'visibility', 30, 30, 1, 0, 0, null, () => {
-        marble.dispose()
+      window.engine = await asyncEngineCreation()
+
+      if (!engine) throw 'engine should not be null.'
+
+      window.scene = createScene()
+    }
+
+    initFunction().then(() => {
+      sceneToRender = scene
+      engine.runRenderLoop(function () {
+        if (sceneToRender && sceneToRender.activeCamera) {
+          sceneToRender.render()
+        }
       })
-
-      if (playSound)
-        playMetalSound();
-
-      const particleSystem = new BABYLON.ParticleSystem('particles', 2000);
-
-      //Texture of each particle
-      particleSystem.particleTexture = new BABYLON.Texture('https://playground.babylonjs.com/textures/flare.png');
-      // Position where the particles are emited from
-      particleSystem.emitter = marble.position;
-      particleSystem.disposeOnStop = true;
-
-      particleSystem.start();
-
-      setTimeout(() => {
-        particleSystem.stop();
-      }, 500);
-    }
-
-    return scene
-  }
-
-  window.initFunction = async function () {
-    var asyncEngineCreation = async function () {
-      try {
-        await Ammo().then(console.log)
-
-        return createDefaultEngine()
-      } catch (e) {
-        console.log('the available createEngine function failed. Creating the default engine instead')
-        return createDefaultEngine()
-      }
-    }
-
-    window.engine = await asyncEngineCreation()
-
-    if (!engine) throw 'engine should not be null.'
-
-    window.scene = createScene()
-  }
-
-  initFunction().then(() => {
-    sceneToRender = scene
-    engine.runRenderLoop(function () {
-      if (sceneToRender && sceneToRender.activeCamera) {
-        sceneToRender.render()
-      }
     })
-  })
 
-  // Resize
-  window.addEventListener('resize', function () {
-    engine.resize()
-  })
-</script>
+    // Resize
+    window.addEventListener('resize', function () {
+      engine.resize()
+    })
+  </script>
 </body>
+
 </html>
