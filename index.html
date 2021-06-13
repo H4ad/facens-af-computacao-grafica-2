@@ -151,6 +151,7 @@
         var bridge3 = scene.getMeshByName('bridge_03')
         var bridge4 = scene.getMeshByName('bridge_04')
         var bridge5 = scene.getMeshByName('bridge_05')
+        bridge5.dispose();
         var bridge6 = scene.getMeshByName('bridge_06')
         var bridge7 = scene.getMeshByName('bridge_07')
         var bridge8 = scene.getMeshByName('bridge_08')
@@ -181,7 +182,6 @@
         bridge2.setParent(null)
         bridge3.setParent(null)
         bridge4.setParent(null)
-        bridge5.setParent(null)
         bridge6.setParent(null)
         bridge7.setParent(null)
         bridge8.setParent(null)
@@ -214,7 +214,6 @@
         bridge2.physicsImpostor = new BABYLON.PhysicsImpostor(bridge2, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
         bridge3.physicsImpostor = new BABYLON.PhysicsImpostor(bridge3, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
         bridge4.physicsImpostor = new BABYLON.PhysicsImpostor(bridge4, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
-        bridge5.physicsImpostor = new BABYLON.PhysicsImpostor(bridge5, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
         bridge6.physicsImpostor = new BABYLON.PhysicsImpostor(bridge6, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
         bridge7.physicsImpostor = new BABYLON.PhysicsImpostor(bridge7, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
         bridge8.physicsImpostor = new BABYLON.PhysicsImpostor(bridge8, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
@@ -237,7 +236,7 @@
         plate01.physicsImpostor = new BABYLON.PhysicsImpostor(plate01, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
         plate02.physicsImpostor = new BABYLON.PhysicsImpostor(plate02, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
         plate03.physicsImpostor = new BABYLON.PhysicsImpostor(plate03, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
-        knife.physicsImpostor = new BABYLON.PhysicsImpostor(knife, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 10 }, scene);
+        knife.physicsImpostor = new BABYLON.PhysicsImpostor(knife, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 10, friction: 10 }, scene);
         dishtray1.physicsImpostor = new BABYLON.PhysicsImpostor(dishtray1, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene);
         dishtray2.physicsImpostor = new BABYLON.PhysicsImpostor(dishtray2, BABYLON.PhysicsImpostor.MeshImpostor, { mass: 0, friction: 1 }, scene)
 
